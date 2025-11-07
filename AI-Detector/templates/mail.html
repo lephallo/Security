@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Phishing Email Detector</title>
+
+  <!-- favicon served from static/ -->
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 760px;
+      margin: 32px auto;
+      padding: 20px;
+      background-color: #f4f4f9;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
+    }
+
+    h1 { text-align: center; color: #333; margin-bottom: 6px; }
+
+    #backendStatus { text-align:center; margin-bottom:18px; font-size:14px; }
+
+    label { display: block; margin-top: 12px; font-weight: bold; }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #e0eaff;
+      padding: 20px 40px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: #0078d7;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .back-btn svg { width: 22px; height: 22px; }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo img {
+      width: 40px;  /* resized logo */
+      height: 40px;
+      border-radius: 8px;
+    }
+
+    .logo h1 {
+      margin: 0;
+      font-size: 18px;
+      color: #003366;
+    }
+
+    button {
+      margin-top: 16px;
+      padding: 10px 20px;
+      border: none;
+      background-color: rgb(113, 113, 247);
+      color: white;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: rgb(99, 99, 238);
+    }
+
+    button[disabled] { opacity: 0.7; cursor: not-allowed; }
+
+    #result {
+      margin-top: 18px;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      text-align: center;
+      min-height: 44px;
+    }
+
+    .phishing { background-color: #ffe6e6; color: #990000; border: 1px solid #ffb3b3; }
+    .legitimate { background-color: #e6f0ff; color: #004085; border: 1px solid #99cfff; }
+    .info { background: #eef5ff; color: #084b8a; border: 1px solid #cfe6ff; }
+
+    small { display:block; margin-top:6px; color:#444; font-weight:normal; }
+
+    #debug {
+      font-size:12px;
+      color:#666;
+      margin-top:10px;
+      text-align:left;
+      word-break:break-word;
+      background:#fff;
+      padding:8px;
+      border-radius:6px;
+      border:1px solid #eee;
+      display:none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="back-btn">Back</a>
+
+   
+    </a>
+
+    <div class="logo">
+      <!-- use url_for to serve logo from static/ -->
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" />
+      <h1>A Multi-Modal Detection System</h1>
+    </div>
+  </header>
+
+  <h1>AI Phishing Email Detector</h1>
+
+  <div id="backendStatus" class="info">Checking backend status…</div>
+
+  <label for="subject">Email Subject</label>
+  <input type="text" id="subject" placeholder="Enter email subject">
+
+  <label for="body">Email Body</label>
+  <textarea id="body" rows="8" placeholder="Enter email body"></textarea>
+
+  <button id="checkBtn">Check Email</button>
+
+  <div id="result" style="display:none"></div>
+  <div id="debug"></div>
+
+<script>
+(async function() {
+  // Build absolute URLs from the current origin so it works when served via Flask.
+  const ORIGIN = window.location.origin || "";
+  const PREDICT_URL = ORIGIN + "/predict";
+  const STATUS_URL  = ORIGIN + "/status";
+
+  const statusEl = document.getElementById('backendStatus');
+  const debugEl = document.getElementById('debug');
+  const resultDiv = document.getElementById('result');
+  const checkBtn = document.getElementById('checkBtn');
+
+  async function fetchWithTimeout(url, opts = {}, timeoutMs = 7000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {...opts, signal: controller.signal});
+      clearTimeout(id);
+      return res;
+    } catch (err) {
+      clearTimeout(id);
+      throw err;
+    }
+  }
+
+  async function checkBackend() {
+    try {
+      const res = await fetchWithTimeout(STATUS_URL, { method: 'GET' }, 3000);
+      if (res.ok) {
+        const json = await res.json().catch(()=>null);
+        if (json) {
+          statusEl.innerHTML = `Backend: <strong>${json.service || 'service'}</strong>`;
+          statusEl.className = 'info';
+          debugEl.style.display = 'block';
+          debugEl.textContent = JSON.stringify(json, null, 2);
+          return;
+        }
+      }
+    } catch(e) {}
+    statusEl.innerHTML = `⚠️ Backend not reachable at <code>${PREDICT_URL}</code>`;
+    statusEl.className = 'phishing';
+  }
+
+  await checkBackend();
+
+  function showResult(text, cssClass='info') {
+    resultDiv.style.display = 'block';
+    resultDiv.className = cssClass;
+    resultDiv.innerHTML = text;
+  }
+
+  function calculateNumericFeatures(body) {
+    const has_links = /https?:\/\//i.test(body) ? 1 : 0;
+    const num_links = (body.match(/https?:\/\//gi) || []).length;
+    const has_attachment = 0;
+    const phishing_score = 0.0;
+    return { has_links, num_links, has_attachment, phishing_score };
+  }
+
+  async function checkEmail() {
+    const subject = document.getElementById('subject').value.trim();
+    const body = document.getElementById('body').value.trim();
+    if (!subject && !body) {
+      alert("Please enter at least subject or body.");
+      return;
+    }
+
+    checkBtn.disabled = true;
+    const prevText = checkBtn.textContent;
+    checkBtn.textContent = "Checking...";
+
+    try {
+      const numeric = calculateNumericFeatures(body);
+      const payload = { subject, body, ...numeric };
+      const res = await fetchWithTimeout(PREDICT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }, 10000);
+
+      if (!res.ok) {
+        let msg = `Server returned ${res.status}`;
+        try { const err = await res.json(); if(err.error) msg += ` — ${err.error}` } catch(e){}
+        showResult(msg, 'info');
+        return;
+      }
+
+      const data = await res.json();
+      debugEl.style.display = 'block';
+      debugEl.textContent = JSON.stringify(data, null, 2);
+
+      const predRaw = (data.prediction || data.label || "").toString().toLowerCase();
+      const probs = data.probabilities || null;
+
+      if (predRaw.includes("phish") || predRaw === "1") {
+        let confidence = "";
+        if(probs && probs[1]!==undefined) confidence = `<small>Confidence: ${(probs[1]*100).toFixed(1)}%</small>`;
+        showResult(`⚠️ This email is likely <strong>PHISHING</strong>. ${confidence}`, 'phishing');
+      } else {
+        let confidence = "";
+        if(probs && probs[0]!==undefined) confidence = `<small>Confidence: ${(probs[0]*100).toFixed(1)}%</small>`;
+        showResult(`✅ This email appears <strong>Legitimate</strong>. ${confidence}`, 'legitimate');
+      }
+
+    } catch (err) {
+      console.error(err);
+      showResult("Could not reach the server. Is the backend running?", 'info');
+      debugEl.style.display = 'block';
+      debugEl.textContent = (err && err.message) ? err.message : String(err);
+    } finally {
+      checkBtn.disabled = false;
+      checkBtn.textContent = prevText;
+    }
+  }
+
+  checkBtn.addEventListener('click', checkEmail);
+  document.getElementById('body').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) checkEmail();
+  });
+
+})();
+</script>
+</body>
+</html>

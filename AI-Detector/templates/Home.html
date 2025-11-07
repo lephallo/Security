@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Sensity - Home</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+
+        /* Header styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #e0eaff;
+            padding: 20px 40px; /* Increased padding for more height */
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 60px; /* Increased size for better visibility */
+            margin-right: 10px;
+        }
+
+        .logo h1 {
+            font-size: 1.5em;
+            margin: 0;
+            color: #2a2a80;
+        }
+
+        /* Use Cases Section */
+        h2 {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 2em;
+            color: #2a2a80;
+        }
+
+        .use-cases {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            padding: 0 20px;
+        }
+
+        .use-case {
+            background: #ffffff;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            width: 300px;
+            text-align: left;
+            transition: box-shadow 0.3s;
+        }
+
+        .use-case:hover {
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .use-case h4 {
+            margin-top: 0;
+            color: #2a2a80;
+        }
+
+        /* Style links as buttons */
+        .btn {
+            display: inline-block;
+            background-color: #4a69f3;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #3b54d1;
+        }
+
+        /* Main content styles */
+        main {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2em;
+            color: #2a2a80;
+            margin-bottom: 20px;
+        }
+
+        /* Results section */
+        .results {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            flex: 1 1 200px;
+            max-width: 250px;
+            text-align: center;
+        }
+
+        .card h3 {
+            font-size: 2em;
+            color: #2a2a80;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        /* Responsive adjustments */
+        @media(max-width: 768px) {
+            .results {
+                flex-direction: column;
+                align-items: center;
+            }
+            .use-cases {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <!-- Replace src with your actual image filename -->
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+            <h1>A Multi-Modal Detection System</h1>
+        </div>
+    </header>
+
+    <!-- Use Cases Section -->
+    <h2>Use Cases</h2>
+    <div class="use-cases">
+        <!-- Media Detection -->
+        <div class="use-case">
+            <h4>Media Detection</h4>
+            <p>
+                Detects AI-generated deepfake media (audio, video, images) by analyzing artifacts and inconsistencies, supporting multiple file types and sizes for quick, accurate verification.
+            </p>
+            <a href="/index" class="btn">Detect Now</a>
+        </div>
+        <!-- Phishing Email Detection -->
+        <div class="use-case">
+            <h4>AI-Generated Phishing Emails</h4>
+            <p>
+                Identifies fake phishing emails with imitated text, logos, and media, analyzing content and embedded files to flag AI-driven scams quickly and effectively.
+            </p>
+           <a href="/mail" class="btn">Detect Now</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <h2>Results you can count on</h2>
+        <div class="results">
+            <div class="card">
+                <h3>98%</h3>
+                <p>Accuracy compared to the 70% of non-AI forensic tools</p>
+            </div>
+            <div class="card">
+                <h3>+5</h3>
+                <p>Malicious deepfakes identified in the past 3 Weeks</p>
+            </div>
+            <div class="card">
+                <h3>14 min</h3>
+                <p>Average time saved on manual reviews per case</p>
+            </div>
+            <div class="card">
+                <h3>+9</h3>
+                <p>Sources monitored</p>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Deepfake Image/Video/Audio/Document Classifier</title>
+<style>
+  :root {
+    --primary: #0078d7;
+    --bg: #f4f8ff;
+    --card: #fff;
+    --muted: #666;
+  }
+
+  body {
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    margin: 0;
+    padding: 20px;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e0eaff;
+    padding: 20px 40px;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 16px;
+    transition: 0.3s;
+  }
+
+  .back-btn:hover { color: #0056a3; }
+  .back-btn svg { width: 22px; height: 22px; }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-container img { 
+    height: 40px;  /* resized logo */
+    width: 40px;
+    border-radius: 8px; 
+  }
+  .logo-container h1 { margin: 0; font-size: 20px; color: #003366; }
+
+  h1 {
+    text-align: center;
+    color: #003366;
+    margin: 24px 0;
+  }
+
+  /* ===== DASHED BOX ===== */
+  .dashed-box {
+    border: 2px dashed #ccc; 
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 900px;
+    margin: 0 auto 40px auto;
+    background: var(--card);
+    box-shadow: 0 4px 16px gainsboro;
+    text-align: center;
+  }
+
+  .supported {
+    background: #e9f6ff;
+    padding: 10px;
+    border-radius: 8px;
+    color: #0056a3;
+    margin-bottom: 14px;
+  }
+
+  input[type="file"] { display: none; }
+
+  /* Upload icon styling */
+  .upload-icon {
+    display: inline-block;
+    cursor: pointer;
+    width: 48px;   /* resized upload icon */
+    height: 48px;
+    transition: transform 0.2s;
+  }
+
+  .upload-icon:hover {
+    transform: scale(1.1);
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    justify-content: center;
+  }
+
+  button {
+    background: var(--primary);
+    color: #fff;
+    border: 0;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  button:hover { background: #0056a3; }
+
+  #uploadedMedia img,
+  #uploadedMedia video {
+    max-width: 400px;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+  }
+
+  #uploadedMedia audio { width: 100%; margin-top: 10px; }
+
+  #uploadedMedia,
+  #result,
+  #frameResults {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #fbfbfb;
+    border: 1px solid #eee;
+    min-height: 48px;
+  }
+
+  #frameResults img { width: 160px; height: auto; border-radius: 6px; }
+
+  .muted { color: var(--muted); font-size: 13px; }
+
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: monospace;
+    background: #fafafa;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px dashed #eee;
+  }
+
+  progress {
+    width: 100%;
+    height: 20px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+
+  @media (max-width: 640px) {
+    .row { flex-direction: column; }
+    .logo-container h1 { font-size: 16px; }
+    .logo-container img { width: 36px; height: 36px; }
+    .upload-icon { width: 40px; height: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="back-btn">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+    Back
+  </a>
+
+  <div class="logo-container">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+    <h1>A Multi-Modal Detection System</h1>
+  </div>
+</header>
+
+<h1>Deepfake Image / Video / Audio</h1>
+
+<div class="dashed-box">
+  <div class="supported">
+    <strong>Supported:</strong> images (jpg/png), video (mp4/mov), audio (wav/mp3).<br>
+    Backend must be running at <code>http://127.0.0.1:5000</code>.
+  </div>
+
+  <!-- Hidden file input -->
+  <input id="fileInput" type="file" accept="image/*,video/*,audio/*,.pdf,.txt,.doc,.docx" onchange="showUploadedPreview(this.files[0])" />
+
+  <!-- Upload icon as label -->
+  <label for="fileInput">
+    <img src="{{ url_for('static', filename='upload.png') }}" alt="Upload" class="upload-icon">
+  </label>
+
+  <div class="row">
+    <button id="classifyBtn" onclick="uploadFile()">Scan</button>
+    <button onclick="clearAll()" style="background:#6c757d">Clear</button>
+  </div>
+
+  <div id="serverStatus" class="muted" style="margin-top:12px">Server status: unknown</div>
+  <div id="uploadedMedia" aria-live="polite"></div>
+
+  <div id="progressContainer" style="display:none;">
+    <progress id="progressBar" max="100" value="0"></progress>
+    <div id="progressText" class="muted">Processing...</div>
+  </div>
+
+  <div id="result" aria-live="polite"></div>
+  <div id="frameResults"></div>
+</div>
+
+<script>
+const BACKEND_BASE = "http://127.0.0.1:5000";
+const SCAN_ROUTE = "/scan_file";
+
+function clearAll() {
+  document.getElementById('fileInput').value = "";
+  document.getElementById('uploadedMedia').innerHTML = "";
+  document.getElementById('result').innerHTML = "";
+  document.getElementById('frameResults').innerHTML = "";
+  document.getElementById('progressContainer').style.display = "none";
+  document.getElementById('progressBar').value = 0;
+}
+
+function showUploadedPreview(file) {
+  const container = document.getElementById('uploadedMedia');
+  container.innerHTML = '';
+  const url = URL.createObjectURL(file);
+  if(file.type.startsWith('image/')){
+    container.innerHTML = `<p class="muted">Uploaded Image:</p><img src="${url}" />`;
+  } else if(file.type.startsWith('video/')){
+    container.innerHTML = `<p class="muted">Uploaded Video:</p><video src="${url}" controls></video>`;
+  } else if(file.type.startsWith('audio/')){
+    container.innerHTML = `<p class="muted">Uploaded Audio:</p><audio src="${url}" controls></audio>`;
+  } else {
+    container.innerHTML = `<p class="muted">Uploaded file: ${file.name}</p>`;
+  }
+}
+
+async function uploadFile(){
+  const input = document.getElementById('fileInput');
+  const file = input.files && input.files[0];
+  if(!file){ alert('Please choose a file'); return; }
+
+  showUploadedPreview(file);
+  document.getElementById('result').innerHTML = '';
+  document.getElementById('frameResults').innerHTML = '';
+
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  progressContainer.style.display = "block";
+  progressBar.removeAttribute('value');
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res = await fetch(BACKEND_BASE + SCAN_ROUTE, { method: 'POST', body: fd });
+    const contentType = res.headers.get('content-type') || '';
+
+    progressBar.value = 100;
+    progressBar.setAttribute('value','100');
+
+    if(!res.ok){
+      const text = contentType.includes('application/json') ? JSON.stringify(await res.json()) : await res.text();
+      document.getElementById('result').innerHTML = `<p style="color:red">Server returned ${res.status}</p><pre>${escapeHtml(text)}</pre>`;
+      return;
+    }
+
+    const data = await res.json();
+    renderResult(data);
+  } catch(err){
+    console.error('Network or CORS error:', err);
+    document.getElementById('result').innerHTML = `<p style="color:red">Network error: ${escapeHtml(err.message || String(err))}. Is backend running at ${BACKEND_BASE}?</p>`;
+    progressContainer.style.display = "none";
+  }
+}
+
+function renderResult(data){
+  const r = document.getElementById('result');
+  const frames = document.getElementById('frameResults');
+  r.innerHTML = '';
+  frames.innerHTML = '';
+
+  if(data.error){
+    r.innerHTML = `<p style="color:red">Error: ${escapeHtml(data.error)}</p>`;
+    return;
+  }
+
+  if(["image","audio","document"].includes(data.type)){
+    let label = data.label || 'Unknown';
+    let confidence = 0;
+    if(data.probabilities && typeof data.probabilities === 'object'){
+      const entries = Object.entries(data.probabilities);
+      if(entries.length){
+        const [maxLabel, maxVal] = entries.reduce((a,b)=>a[1]>b[1]?a:b);
+        label = maxLabel;
+        confidence = Math.round(maxVal*100);
+      }
+    }
+    let friendlyLabel = label.toLowerCase().includes("real") ? "Authentic Content" : "Fake Content";
+    r.innerHTML = `<p><strong>${friendlyLabel}</strong><br>Confidence: ${confidence}%</p>`;
+    document.getElementById('progressContainer').style.display = "none";
+    return;
+  }
+
+  if(data.type === 'video'){
+    if(!Array.isArray(data.frame_predictions)){
+      r.innerHTML = `<p><strong>Video:</strong> No frame predictions returned</p>`;
+      document.getElementById('progressContainer').style.display = "none";
+      return;
+    }
+
+    const frameLabels = data.frame_predictions.map(idx => idx===0?'Authentic':'Fake');
+    const counts = {'Authentic':0,'Fake':0};
+    frameLabels.forEach(l=>counts[l]++);
+    const mainLabel = counts['Fake']>counts['Authentic']?'Fake Content':'Authentic Content';
+    const confidence = Math.round(Math.max(counts['Fake'],counts['Authentic'])/frameLabels.length*100);
+    r.innerHTML = `<p><strong>${mainLabel}</strong><br>Confidence: ${confidence}%</p>`;
+
+    frames.innerHTML = '<h4>Per-frame results</h4><div id="frameGrid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>';
+    const grid = document.getElementById('frameGrid');
+
+    frameLabels.forEach((lbl,i)=>{
+      const box = document.createElement('div');
+      box.style="width:160px;text-align:center;font-size:12px;color:#333;background:#f8f8f8;border-radius:6px;padding:6px;box-shadow:0 2px 5px rgba(0,0,0,0.1);";
+      if(data.frame_images && data.frame_images[i]){
+        const img = document.createElement('img');
+        img.src=data.frame_images[i];
+        img.style="width:100%;border-radius:4px;margin-bottom:4px;";
+        box.appendChild(img);
+      }
+      const caption=document.createElement('div');
+      caption.textContent=`Frame ${i+1}: ${lbl}`;
+      caption.style.color=lbl.includes("Fake")?"red":"green";
+      box.appendChild(caption);
+      grid.appendChild(box);
+    });
+    document.getElementById('progressContainer').style.display="none";
+    return;
+  }
+}
+
+function escapeHtml(unsafe){
+  if(unsafe===null||unsafe===undefined) return '';
+  return String(unsafe).replace(/&/g,"&amp;")
+                       .replace(/</g,"&lt;")
+                       .replace(/>/g,"&gt;")
+                       .replace(/"/g,"&quot;")
+                       .replace(/'/g,"&#039;");
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+Flask
+flask-cors
+joblib
+nltk
+numpy
+opencv-python   # for logo/image processing
+torch           # if using PyTorch models
+torchaudio      # if using audio
+pytesseract     # if using OCR
+python-docx     # if you want to parse docx
+pdfminer.six    # pdf text extraction
